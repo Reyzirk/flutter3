@@ -1,6 +1,7 @@
 import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:namer_app/Objects/objects.dart';
 
 void main() {
   runApp(const MyApp());
@@ -28,6 +29,7 @@ class MyApp extends StatelessWidget {
 class MyAppState extends ChangeNotifier {
   var current = WordPair.random();
   var favourites = <WordPair>[];
+  var checkListArr = <CheckList>[];
 
   void toggleFavourite() {
     if (favourites.contains(current)) {
@@ -39,14 +41,136 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void addNewCheckList(String name, String desc) {
+    bool checked = false;
+
+    if (name.isNotEmpty && desc.isNotEmpty) {
+      CheckList checklist = CheckList(name, desc, checked);
+      checkListArr.add(checklist);
+    }
+
+    notifyListeners();
+  }
+
+  void tickCheckList(CheckList checkList) {
+    //Check if checklist is ticked
+    if (checkList.checked == true) {
+      checkList.checked == false;
+    } else {
+      checkList.checked = true;
+    }
+    notifyListeners();
+  }
+
   void getNext() {
     current = WordPair.random();
     notifyListeners();
   }
 
-  void removeFavourite (WordPair pair) {
+  void removeFavourite(WordPair pair) {
     favourites.remove(pair);
     notifyListeners();
+  }
+}
+
+class CheckListHome extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    var theme = Theme.of(context);
+    var appState = context.watch<MyAppState>();
+    final TextEditingController checkListNameController =
+        TextEditingController();
+    final TextEditingController checkListDescController =
+        TextEditingController();
+
+    return Scaffold(
+      backgroundColor: theme.colorScheme.primaryContainer,
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          final Future<bool?> dialogResult = showDialog(
+              context: context,
+              builder: (BuildContext context) => AlertDialog(
+                    title: const Text('Add New CheckList'),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: <Widget>[
+                        TextField(
+                          controller: checkListNameController,
+                          decoration: InputDecoration(
+                            border: UnderlineInputBorder(),
+                            labelText: 'Enter Checklist Name',
+                          ),
+                        ),
+                        TextField(
+                          controller: checkListDescController,
+                          decoration: InputDecoration(
+                              border: UnderlineInputBorder(),
+                              labelText: 'Enter Checklist Desc'),
+                        )
+                      ],
+                    ),
+                    actions: <Widget>[
+                      TextButton(
+                        onPressed: () {
+                          Navigator.of(context).pop(false);
+                          //Navigator.pop(context, 'Cancel');
+                        },
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          //Validate if TextControllers are empty?
+                          Navigator.of(context).pop(true);
+                          //Navigator.pop(context, 'OK');
+                        },
+                        child: const Text('OK'),
+                      )
+                    ],
+                  ));
+          dialogResult.then((bool? result) { //If user clicked on "OK"
+
+          });
+        },
+        backgroundColor: theme.colorScheme.inversePrimary,
+        child: const Icon(Icons.add),
+      ),
+      body: Center(
+        child: CheckListPage(),
+      ),
+    );
+  }
+}
+
+class CheckListPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    var theme = Theme.of(context);
+    var appState = context.watch<MyAppState>();
+
+    if (appState.checkListArr.isEmpty) {
+      return Center(
+        child: Text('No checklists yet.'),
+      );
+    } else {
+      return ListView(
+        children: [
+          for (var checklist in appState.checkListArr)
+            ListTile(
+              leading: IconButton(
+                icon: Icon(
+                  Icons.check_box_outlined,
+                  semanticLabel: 'CheckBox',
+                ),
+                color: theme.colorScheme.primary,
+                onPressed: () {
+                  appState.tickCheckList(checklist);
+                },
+              ),
+              title: Text(checklist.name.toString()),
+            ),
+        ],
+      );
+    }
   }
 }
 
@@ -65,7 +189,8 @@ class FavouritesPage extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.all(20),
-            child: Text('You have liked ${appState.favourites.length} word(s).'),
+            child:
+                Text('You have liked ${appState.favourites.length} word(s).'),
           ),
           for (var pair in appState.favourites)
             ListTile(
@@ -105,6 +230,9 @@ class _MyHomePageState extends State<MyHomePage> {
       case 1:
         page = FavouritesPage();
         break;
+      case 2:
+        page = CheckListHome();
+        break;
       default:
         throw UnimplementedError('No Widget for $selectedIndex_test');
     }
@@ -121,6 +249,9 @@ class _MyHomePageState extends State<MyHomePage> {
                     icon: Icon(Icons.home), label: Text('Home')),
                 NavigationRailDestination(
                     icon: Icon(Icons.favorite), label: Text('Favourites')),
+                NavigationRailDestination(
+                    icon: Icon(Icons.menu_book_outlined),
+                    label: Text('CheckList')),
               ],
               selectedIndex: selectedIndex_test,
               onDestinationSelected: (value) {
