@@ -6,6 +6,7 @@ class MyAppState extends ChangeNotifier {
   var current = WordPair.random();
   var favourites = <WordPair>[];
   var checkListArr = <CheckList>[];
+  var checkListCount = 0;
 
   void toggleFavourite() {
     if (favourites.contains(current)) {
